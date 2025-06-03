@@ -1,0 +1,119 @@
+{% extends 'base.html' %}
+
+{% block title %}Home - Photo Gallery{% endblock %}
+
+{% block content %}
+<!-- Hero Section -->
+<section class="gradient-bg text-white py-20">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
+        <h1 class="text-4xl md:text-6xl font-bold mb-6 fade-in">
+            Discover Amazing Photography
+        </h1>
+        <p class="text-xl md:text-2xl mb-8 opacity-90 fade-in">
+            Explore a curated collection of stunning photos, portraits, and artworks from talented photographers
+        </p>
+        <div class="space-x-4 fade-in">
+            <a href="{% url 'gallery:photo_list' %}" class="bg-white text-blue-600 hover:bg-gray-100 font-semibold py-3 px-8 rounded-lg transition-colors duration-200 inline-block">
+                <i class="fas fa-images mr-2"></i> Browse Gallery
+            </a>
+            {% if not user.is_authenticated %}
+                <a href="{% url 'accounts:register' %}" class="border-2 border-white text-white hover:bg-white hover:text-blue-600 font-semibold py-3 px-8 rounded-lg transition-colors duration-200 inline-block">
+                    <i class="fas fa-user-plus mr-2"></i> Join Now
+                </a>
+            {% endif %}
+        </div>
+    </div>
+</section>
+
+<!-- Stats Section -->
+<section class="py-16 bg-white">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-8 text-center">
+            <div class="fade-in">
+                <div class="text-4xl font-bold text-blue-600 mb-2">{{ total_photos }}</div>
+                <div class="text-gray-600">Amazing Photos</div>
+            </div>
+            <div class="fade-in">
+                <div class="text-4xl font-bold text-blue-600 mb-2">{{ total_tags }}</div>
+                <div class="text-gray-600">Unique Tags</div>
+            </div>
+            <div class="fade-in">
+                <div class="text-4xl font-bold text-blue-600 mb-2">∞</div>
+                <div class="text-gray-600">Inspiration</div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- Featured Photos -->
+{% if featured_photos %}
+<section class="py-16 bg-gray-50">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div class="text-center mb-12">
+            <h2 class="text-3xl font-bold text-gray-800 mb-4">Featured Photos</h2>
+            <p class="text-gray-600">Discover our latest and most captivating photography</p>
+        </div>
+        
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+            {% for photo in featured_photos %}
+                <div class="photo-card bg-white rounded-lg shadow-md overflow-hidden fade-in">
+                    <div class="aspect-w-16 aspect-h-12 relative overflow-hidden">
+                        <img src="{{ photo.image.url }}" alt="{{ photo.title }}" 
+                             class="w-full h-64 object-cover transition-transform duration-300 hover:scale-105">
+                        <div class="absolute inset-0 bg-black bg-opacity-0 hover:bg-opacity-20 transition-all duration-300 flex items-center justify-center">
+                            <a href="{% url 'gallery:photo_detail' photo.id %}" 
+                               class="opacity-0 hover:opacity-100 transition-opacity duration-300 bg-white text-gray-800 px-4 py-2 rounded-lg font-medium">
+                                <i class="fas fa-eye mr-2"></i> View Details
+                            </a>
+                        </div>
+                    </div>
+                    <div class="p-6">
+                        <h3 class="text-xl font-semibold text-gray-800 mb-2">{{ photo.title }}</h3>
+                        <p class="text-gray-600 text-sm mb-3">
+                            <i class="fas fa-user mr-1"></i> {{ photo.uploaded_by.username }}
+                        </p>
+                        {% if photo.tags.all %}
+                            <div class="flex flex-wrap gap-2">
+                                {% for tag in photo.tags.all|slice:":3" %}
+                                    <span class="bg-blue-100 text-blue-800 text-xs px-2 py-1 rounded-full">
+                                        {{ tag.name }}
+                                    </span>
+                                {% endfor %}
+                            </div>
+                        {% endif %}
+                    </div>
+                </div>
+            {% endfor %}
+        </div>
+        
+        <div class="text-center mt-12">
+            <a href="{% url 'gallery:photo_list' %}" class="btn-primary">
+                <i class="fas fa-images mr-2"></i> View All Photos
+            </a>
+        </div>
+    </div>
+</section>
+{% endif %}
+
+<!-- Popular Tags -->
+{% if popular_tags %}
+<section class="py-16 bg-white">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div class="text-center mb-12">
+            <h2 class="text-3xl font-bold text-gray-800 mb-4">Popular Tags</h2>
+            <p class="text-gray-600">Explore photos by popular categories</p>
+        </div>
+        
+        <div class="flex flex-wrap justify-center gap-4">
+            {% for tag in popular_tags %}
+                <a href="{% url 'gallery:photos_by_tag' tag.name %}" 
+                   class="bg-gray-100 hover:bg-blue-100 text-gray-700 hover:text-blue-700 px-6 py-3 rounded-full transition-colors duration-200 font-medium">
+                    {{ tag.name }}
+                    <span class="ml-2 text-sm opacity-75">({{ tag.photo_count }})</span>
+                </a>
+            {% endfor %}
+        </div>
+    </div>
+</section>
+{% endif %}
+{% endblock %}

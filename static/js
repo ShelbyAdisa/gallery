@@ -1,0 +1,585 @@
+document.addEventListener('DOMContentLoaded', function() {
+    // Initialize all components
+    initPhotoInteractions();
+    initToastNotifications();
+    initImageLazyLoading();
+    initFormValidation();
+    initNavigation();
+    initSearch();
+});
+
+// Photo interactions (like/dislike)
+function initPhotoInteractions() {
+    const likeButtons = document.querySelectorAll('.like-btn');
+    const dislikeButtons = document.querySelectorAll('.dislike-btn');
+    
+    likeButtons.forEach(button => {
+        button.addEventListener('click', function(e) {
+            e.preventDefault();
+            const photoId = this.dataset.photoId;
+            handlePhotoAction(photoId, 'like', this);
+        });
+    });
+    
+    dislikeButtons.forEach(button => {
+        button.addEventListener('click', function(e) {
+            e.preventDefault();
+            const photoId = this.dataset.photoId;
+            handlePhotoAction(photoId, 'dislike', this);
+        });
+    });
+}
+
+// Handle like/dislike actions
+function handlePhotoAction(photoId, action, button) {
+    const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]').value;
+    
+    fetch(`/gallery/photo/${photoId}/${action}/`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': csrfToken,
+        },
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            // Update button states
+            updateButtonState(button, data.user_action);
+            // Update counters
+            updateActionCounters(photoId, data.likes_count, data.dislikes_count);
+            // Show toast notification
+            showToast(data.message, 'success');
+        } else {
+            showToast(data.message || 'Action failed', 'error');
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        showToast('Something went wrong. Please try again.', 'error');
+    });
+}
+
+// Update button visual state
+function updateButtonState(clickedButton, userAction) {
+    const photoItem = clickedButton.closest('.photo-item');
+    const likeBtn = photoItem.querySelector('.like-btn');
+    const dislikeBtn = photoItem.querySelector('.dislike-btn');
+    
+    // Reset all buttons
+    likeBtn.classList.remove('active', 'text-blue-600');
+    dislikeBtn.classList.remove('active', 'text-red-600');
+    likeBtn.classList.add('text-gray-400');
+    dislikeBtn.classList.add('text-gray-400');
+    
+    // Set active state based on user action
+    if (userAction === 'liked') {
+        likeBtn.classList.add('active', 'text-blue-600');
+        likeBtn.classList.remove('text-gray-400');
+    } else if (userAction === 'disliked') {
+        dislikeBtn.classList.add('active', 'text-red-600');
+        dislikeBtn.classList.remove('text-gray-400');
+    }
+}
+
+// Update action counters
+function updateActionCounters(photoId, likesCount, dislikesCount) {
+    const photoItem = document.querySelector(`[data-photo-id="${photoId}"]`).closest('.photo-item');
+    const likeCounter = photoItem.querySelector('.like-count');
+    const dislikeCounter = photoItem.querySelector('.dislike-count');
+    
+    if (likeCounter) likeCounter.textContent = likesCount;
+    if (dislikeCounter) dislikeCounter.textContent = dislikesCount;
+}
+
+// Toast notification system
+function initToastNotifications() {
+    // Auto-hide existing Django messages
+    const messages = document.querySelectorAll('.alert');
+    messages.forEach(message => {
+        setTimeout(() => {
+            hideToast(message);
+        }, 5000);
+    });
+}
+
+function showToast(message, type = 'info') {
+    const toast = document.createElement('div');
+    toast.className = `toast ${type} show`;
+    toast.innerHTML = `
+        <div class="flex items-center justify-between">
+            <span>${message}</span>
+            <button class="ml-4 text-gray-400 hover:text-gray-600" onclick="hideToast(this.parentElement.parentElement)">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                </svg>
+            </button>
+        </div>
+    `;
+    
+    document.body.appendChild(toast);
+    
+    // Auto-hide after 5 seconds
+    setTimeout(() => {
+        hideToast(toast);
+    }, 5000);
+}
+
+function hideToast(toast) {
+    toast.classList.remove('show');
+    setTimeout(() => {
+        if (toast.parentElement) {
+            toast.parentElement.removeChild(toast);
+        }
+    }, 300);
+}
+
+// Lazy loading for images
+function initImageLazyLoading() {
+    const images = document.querySelectorAll('img[data-src]');
+    
+    if ('IntersectionObserver' in window) {
+        const imageObserver = new IntersectionObserver((entries, observer) => {
+            entries.forEach(entry => {
+                if (entry.isIntersecting) {
+                    const img = entry.target;
+                    img.src = img.dataset.src;
+                    img.classList.remove('lazy');
+                    imageObserver.unobserve(img);
+                }
+            });
+        });
+        
+        images.forEach(img => imageObserver.observe(img));
+    } else {
+        // Fallback for older browsers
+        images.forEach(img => {
+            img.src = img.dataset.src;
+        });
+    }
+}
+
+// Form validation
+function initFormValidation() {
+    const forms = document.querySelectorAll('form[data-validate]');
+    
+    forms.forEach(form => {
+        form.addEventListener('submit', function(e) {
+            if (!validateForm(this)) {
+                e.preventDefault();
+            }
+        });
+        
+        // Real-time validation
+        const inputs = form.querySelectorAll('input, textarea, select');
+        inputs.forEach(input => {
+            input.addEventListener('blur', function() {
+                validateField(this);
+            });
+        });
+    });
+}
+
+function validateForm(form) {
+    let isValid = true;
+    const inputs = form.querySelectorAll('input[required], textarea[required], select[required]');
+    
+    inputs.forEach(input => {
+        if (!validateField(input)) {
+            isValid = false;
+        }
+    });
+    
+    return isValid;
+}
+
+function validateField(field) {
+    const value = field.value.trim();
+    const fieldType = field.type;
+    let isValid = true;
+    let errorMessage = '';
+    
+    // Remove existing error
+    removeFieldError(field);
+    
+    // Required field validation
+    if (field.hasAttribute('required') && !value) {
+        isValid = false;
+        errorMessage = 'This field is required.';
+    }
+    
+    // Email validation
+    else if (fieldType === 'email' && value) {
+        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+        if (!emailRegex.test(value)) {
+            isValid = false;
+            errorMessage = 'Please enter a valid email address.';
+        }
+    }
+    
+    // Password validation
+    else if (fieldType === 'password' && value && field.name === 'password1') {
+        if (value.length < 8) {
+            isValid = false;
+            errorMessage = 'Password must be at least 8 characters long.';
+        }
+    }
+    
+    // Password confirmation validation
+    else if (field.name === 'password2' && value) {
+        const password1 = document.querySelector('input[name="password1"]');
+        if (password1 && value !== password1.value) {
+            isValid = false;
+            errorMessage = 'Passwords do not match.';
+        }
+    }
+    
+    if (!isValid) {
+        showFieldError(field, errorMessage);
+    }
+    
+    return isValid;
+}
+
+function showFieldError(field, message) {
+    field.classList.add('border-red-500');
+    
+    const errorDiv = document.createElement('div');
+    errorDiv.className = 'field-error text-red-500 text-sm mt-1';
+    errorDiv.textContent = message;
+    
+    field.parentNode.appendChild(errorDiv);
+}
+
+function removeFieldError(field) {
+    field.classList.remove('border-red-500');
+    
+    const existingError = field.parentNode.querySelector('.field-error');
+    if (existingError) {
+        existingError.remove();
+    }
+}
+
+// Navigation enhancements
+function initNavigation() {
+    // Mobile menu toggle
+    const mobileMenuButton = document.querySelector('.mobile-menu-button');
+    const mobileMenu = document.querySelector('.mobile-menu');
+    
+    if (mobileMenuButton && mobileMenu) {
+        mobileMenuButton.addEventListener('click', function() {
+            mobileMenu.classList.toggle('hidden');
+        });
+    }
+    
+    // Smooth scrolling for anchor links
+    const anchorLinks = document.querySelectorAll('a[href^="#"]');
+    anchorLinks.forEach(link => {
+        link.addEventListener('click', function(e) {
+            e.preventDefault();
+            
+            const targetId = this.getAttribute('href').substring(1);
+            const targetElement = document.getElementById(targetId);
+            
+            if (targetElement) {
+                targetElement.scrollIntoView({
+                    behavior: 'smooth',
+                    block: 'start'
+                });
+            }
+        });
+    });
+}
+
+// Photo filtering
+function filterPhotos(tag) {
+    const photos = document.querySelectorAll('.photo-item');
+    const filterButtons = document.querySelectorAll('.filter-btn');
+    
+    // Update active filter button
+    filterButtons.forEach(btn => {
+        btn.classList.remove('active');
+        if (btn.dataset.filter === tag) {
+            btn.classList.add('active');
+        }
+    });
+    
+    // Show/hide photos
+    photos.forEach(photo => {
+        const photoTags = photo.dataset.tags ? photo.dataset.tags.split(',') : [];
+        
+        if (tag === 'all' || photoTags.includes(tag)) {
+            photo.style.display = 'block';
+            photo.classList.add('fade-in-up');
+        } else {
+            photo.style.display = 'none';
+        }
+    });
+}
+
+// Search functionality
+function initSearch() {
+    const searchInput = document.querySelector('#search-input');
+    const searchButton = document.querySelector('#search-button');
+    
+    if (searchInput) {
+        searchInput.addEventListener('input', debounce(function() {
+            const query = this.value.toLowerCase().trim();
+            searchPhotos(query);
+        }, 300));
+        
+        searchInput.addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                const query = this.value.toLowerCase().trim();
+                searchPhotos(query);
+            }
+        });
+    }
+    
+    if (searchButton) {
+        searchButton.addEventListener('click', function() {
+            const query = searchInput.value.toLowerCase().trim();
+            searchPhotos(query);
+        });
+    }
+}
+
+// Search photos function
+function searchPhotos(query) {
+    const photos = document.querySelectorAll('.photo-item');
+    const noResultsMessage = document.querySelector('#no-results');
+    let visibleCount = 0;
+    
+    photos.forEach(photo => {
+        const title = photo.querySelector('.photo-title')?.textContent.toLowerCase() || '';
+        const description = photo.querySelector('.photo-description')?.textContent.toLowerCase() || '';
+        const tags = photo.dataset.tags ? photo.dataset.tags.toLowerCase() : '';
+        const author = photo.querySelector('.photo-author')?.textContent.toLowerCase() || '';
+        
+        const isMatch = !query || 
+            title.includes(query) || 
+            description.includes(query) || 
+            tags.includes(query) || 
+            author.includes(query);
+        
+        if (isMatch) {
+            photo.style.display = 'block';
+            photo.classList.add('fade-in-up');
+            visibleCount++;
+        } else {
+            photo.style.display = 'none';
+        }
+    });
+    
+    // Show/hide no results message
+    if (noResultsMessage) {
+        if (visibleCount === 0 && query) {
+            noResultsMessage.style.display = 'block';
+        } else {
+            noResultsMessage.style.display = 'none';
+        }
+    }
+    
+    // Update URL with search query
+    if (query) {
+        const url = new URL(window.location);
+        url.searchParams.set('search', query);
+        window.history.pushState({}, '', url);
+    } else {
+        const url = new URL(window.location);
+        url.searchParams.delete('search');
+        window.history.pushState({}, '', url);
+    }
+}
+
+// Debounce utility function
+function debounce(func, wait) {
+    let timeout;
+    return function executedFunction(...args) {
+        const later = () => {
+            clearTimeout(timeout);
+            func(...args);
+        };
+        clearTimeout(timeout);
+        timeout = setTimeout(later, wait);
+    };
+}
+
+// Photo modal/lightbox functionality
+function initPhotoModal() {
+    const photoItems = document.querySelectorAll('.photo-item img');
+    const modal = document.querySelector('#photo-modal');
+    const modalImage = document.querySelector('#modal-image');
+    const modalTitle = document.querySelector('#modal-title');
+    const modalDescription = document.querySelector('#modal-description');
+    const closeModal = document.querySelector('#close-modal');
+    const prevButton = document.querySelector('#prev-photo');
+    const nextButton = document.querySelector('#next-photo');
+    
+    let currentPhotoIndex = 0;
+    let photos = Array.from(document.querySelectorAll('.photo-item'));
+    
+    if (modal && modalImage) {
+        photoItems.forEach((img, index) => {
+            img.addEventListener('click', function() {
+                currentPhotoIndex = index;
+                showPhotoModal(this);
+            });
+        });
+        
+        if (closeModal) {
+            closeModal.addEventListener('click', hidePhotoModal);
+        }
+        
+        if (prevButton) {
+            prevButton.addEventListener('click', showPreviousPhoto);
+        }
+        
+        if (nextButton) {
+            nextButton.addEventListener('click', showNextPhoto);
+        }
+        
+        // Close modal on escape key
+        document.addEventListener('keydown', function(e) {
+            if (e.key === 'Escape' && modal.style.display === 'block') {
+                hidePhotoModal();
+            }
+        });
+        
+        // Navigate with arrow keys
+        document.addEventListener('keydown', function(e) {
+            if (modal.style.display === 'block') {
+                if (e.key === 'ArrowLeft') {
+                    showPreviousPhoto();
+                } else if (e.key === 'ArrowRight') {
+                    showNextPhoto();
+                }
+            }
+        });
+    }
+}
+
+function showPhotoModal(img) {
+    const modal = document.querySelector('#photo-modal');
+    const modalImage = document.querySelector('#modal-image');
+    const modalTitle = document.querySelector('#modal-title');
+    const modalDescription = document.querySelector('#modal-description');
+    
+    if (modal && modalImage) {
+        const photoItem = img.closest('.photo-item');
+        const title = photoItem.querySelector('.photo-title')?.textContent || '';
+        const description = photoItem.querySelector('.photo-description')?.textContent || '';
+        
+        modalImage.src = img.src;
+        modalImage.alt = img.alt;
+        
+        if (modalTitle) modalTitle.textContent = title;
+        if (modalDescription) modalDescription.textContent = description;
+        
+        modal.style.display = 'block';
+        document.body.style.overflow = 'hidden';
+    }
+}
+
+function hidePhotoModal() {
+    const modal = document.querySelector('#photo-modal');
+    if (modal) {
+        modal.style.display = 'none';
+        document.body.style.overflow = 'auto';
+    }
+}
+
+function showPreviousPhoto() {
+    const visiblePhotos = Array.from(document.querySelectorAll('.photo-item')).filter(
+        photo => photo.style.display !== 'none'
+    );
+    
+    if (visiblePhotos.length > 0) {
+        currentPhotoIndex = (currentPhotoIndex - 1 + visiblePhotos.length) % visiblePhotos.length;
+        const img = visiblePhotos[currentPhotoIndex].querySelector('img');
+        showPhotoModal(img);
+    }
+}
+
+function showNextPhoto() {
+    const visiblePhotos = Array.from(document.querySelectorAll('.photo-item')).filter(
+        photo => photo.style.display !== 'none'
+    );
+    
+    if (visiblePhotos.length > 0) {
+        currentPhotoIndex = (currentPhotoIndex + 1) % visiblePhotos.length;
+        const img = visiblePhotos[currentPhotoIndex].querySelector('img');
+        showPhotoModal(img);
+    }
+}
+
+// Initialize photo modal when DOM is ready
+document.addEventListener('DOMContentLoaded', function() {
+    initPhotoModal();
+});
+
+// Infinite scroll functionality
+function initInfiniteScroll() {
+    let page = 2; // Start from page 2 since page 1 is already loaded
+    let loading = false;
+    let hasMore = true;
+    
+    const loadingIndicator = document.querySelector('#loading-indicator');
+    
+    window.addEventListener('scroll', debounce(function() {
+        if (loading || !hasMore) return;
+        
+        const { scrollTop, scrollHeight, clientHeight } = document.documentElement;
+        
+        if (scrollTop + clientHeight >= scrollHeight - 1000) {
+            loadMorePhotos();
+        }
+    }, 100));
+    
+    function loadMorePhotos() {
+        if (loading || !hasMore) return;
+        
+        loading = true;
+        if (loadingIndicator) loadingIndicator.style.display = 'block';
+        
+        const url = new URL(window.location);
+        url.searchParams.set('page', page);
+        
+        fetch(url, {
+            headers: {
+                'X-Requested-With': 'XMLHttpRequest'
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.html && data.html.trim()) {
+                const gallery = document.querySelector('#photo-gallery');
+                if (gallery) {
+                    gallery.insertAdjacentHTML('beforeend', data.html);
+                    
+                    // Re-initialize components for new photos
+                    initPhotoInteractions();
+                    initImageLazyLoading();
+                    
+                    page++;
+                }
+            } else {
+                hasMore = false;
+            }
+        })
+        .catch(error => {
+            console.error('Error loading more photos:', error);
+            showToast('Failed to load more photos', 'error');
+        })
+        .finally(() => {
+            loading = false;
+            if (loadingIndicator) loadingIndicator.style.display = 'none';
+        });
+    }
+}
+
+// Initialize infinite scroll
+document.addEventListener('DOMContentLoaded', function() {
+    initInfiniteScroll();
+});
