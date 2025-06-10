@@ -2,6 +2,7 @@ from django import forms
 from django.contrib.auth.forms import UserCreationForm
 from django.contrib.auth.models import User
 from .models import UserProfile
+from .models import Photo
 
 class UserRegistrationForm(UserCreationForm):
     email = forms.EmailField(required=True)
@@ -57,17 +58,17 @@ class ProfileUpdateForm(forms.ModelForm):
             'rows': 4
         })
 
-# class ProfileUpdateForm(forms.ModelForm):
-#     class Meta:
-#         model = UserProfile
-#         fields = ['bio', 'profile_picture']
-
-#     def __init__(self, *args, **kwargs):
-#         super().__init__(*args, **kwargs)
-#         self.fields['bio'].widget.attrs.update({
-#             'class': 'w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent',
-#             'rows': 4
-#         })
-#         self.fields['profile_picture'].widget.attrs.update({
-#             'class': 'w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent'
-#         })
+class PhotoUploadForm(forms.ModelForm):
+    class Meta:
+        model = Photo
+        fields = ['title', 'image']  # Adjust fields based on your Photo model
+        widgets = {
+            'title': forms.TextInput(attrs={
+                'class': 'form-control',
+                'placeholder': 'Enter photo title'
+            }),
+            'image': forms.FileInput(attrs={
+                'class': 'form-control',
+                'accept': 'image/*'
+            })
+        }

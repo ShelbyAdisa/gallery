@@ -1,0 +1,134 @@
+{% load static %}
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login - Photo Gallery</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gradient-to-br from-blue-50 to-indigo-100 min-h-screen flex items-center justify-center">
+    <div class="max-w-md w-full mx-4">
+        <!-- Login -->
+        <div class="bg-white rounded-2xl shadow-xl p-8">
+            <!-- Header -->
+            <div class="text-center mb-8">
+                <div class="w-16 h-16 bg-gradient-to-br from-blue-500 to-purple-600 rounded-full mx-auto mb-4 flex items-center justify-center">
+                    <svg class="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                              d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z"/>
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                              d="M15 13a3 3 0 11-6 0 3 3 0 016 0z"/>
+                    </svg>
+                </div>
+                <h2 class="text-3xl font-bold text-gray-800">Welcome Back</h2>
+                <p class="text-gray-600 mt-2">Sign in to your Photo Gallery account</p>
+            </div>
+
+            <!-- Error Messages -->
+            <div id="error-messages" class="hidden bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded-lg mb-4">
+                <p class="text-sm">Error messages will appear here</p>
+            </div>
+
+            <!-- Login Form -->
+            <form method="post" action="{% url 'accounts:login' %}" class="space-y-6" onsubmit="return validateForm(event)">
+                {% csrf_token %}
+
+                <!-- Username Field -->
+                <div>
+                    <label for="username" class="block text-sm font-medium text-gray-700 mb-2">Username</label>
+                    <input type="text" 
+                           id="username" 
+                           name="username" 
+                           required
+                           class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition duration-200"
+                           placeholder="Enter your username">
+                </div>
+
+                <!-- Password Field -->
+                <div>
+                    <label for="password" class="block text-sm font-medium text-gray-700 mb-2">Password</label>
+                    <input type="password" 
+                           id="password" 
+                           name="password" 
+                           required
+                           class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition duration-200"
+                           placeholder="Enter your password">
+                </div>
+
+                <!-- Remember Me -->
+                <div class="flex items-center justify-between">
+                    <div class="flex items-center">
+                        <input type="checkbox" 
+                               id="remember" 
+                               name="remember" 
+                               class="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded">
+                        <label for="remember" class="ml-2 text-sm text-gray-600">Remember me</label>
+                    </div>
+                    <a href="#" class="text-sm text-blue-600 hover:text-blue-500 transition duration-200">
+                        Forgot password?
+                    </a>
+                </div>
+
+                <!-- Submit Button -->
+                <button type="submit" 
+                        class="w-full bg-gradient-to-r from-blue-500 to-purple-600 text-white py-3 px-4 rounded-lg hover:from-blue-600 hover:to-purple-700 focus:ring-4 focus:ring-blue-200 transition duration-200 font-medium">
+                    Sign In
+                </button>
+            </form>
+
+            <!-- Register Link -->
+            <div class="mt-8 text-center">
+                <p class="text-gray-600">
+                    Don't have an account? 
+                    <a href="{% url 'accounts:register' %}" class="text-blue-600 hover:text-blue-500 font-medium transition duration-200">
+                        Sign up here
+                    </a>
+                </p>
+            </div>
+
+            <!-- Back to Gallery -->
+            <div class="mt-4 text-center">
+                <a href="{% url 'gallery:home' %}" class="text-sm text-gray-500 hover:text-gray-700 transition duration-200">
+                    ← Back to Gallery
+                </a>
+            </div>
+        </div>
+
+        <!-- Footer -->
+        <div class="text-center mt-8">
+            <p class="text-gray-500 text-sm">&copy; 2025 Photo Gallery. All rights reserved.</p>
+        </div>
+    </div>
+
+    <!-- JavaScript -->
+    <script>
+        function validateForm(event) {
+            const username = document.getElementById('username').value.trim();
+            const password = document.getElementById('password').value;
+            
+            let errors = [];
+            
+            if (!username) {
+                errors.push('Username is required');
+            }
+            if (!password) {
+                errors.push('Password is required');
+            }
+
+            const errorDiv = document.getElementById('error-messages');
+
+            if (errors.length > 0) {
+                event.preventDefault();
+                errorDiv.innerHTML = errors.map(error => `<p class="text-sm">${error}</p>`).join('');
+                errorDiv.classList.remove('hidden');
+                return false;
+            } else {
+                errorDiv.classList.add('hidden');
+                return true;
+            }
+        }
+    </script>
+</body>
+</html>

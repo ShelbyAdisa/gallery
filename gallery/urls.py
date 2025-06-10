@@ -10,4 +10,8 @@ urlpatterns = [
     path('photos/tag/<str:tag>/', views.photos_by_tag, name='photos_by_tag'),
     path('photo/<int:photo_id>/like/', views.like_photo, name='like_photo'),
     path('photo/<int:photo_id>/dislike/', views.dislike_photo, name='dislike_photo'),
+    path('upload/', views.upload_photo, name='upload_photo'),
+    path('delete_photo/<int:photo_id>/', views.delete_photo, name='delete_photo'),
+    path('my-photos/', views.my_photos, name='my_photos'),
+
 ]

@@ -11,39 +11,37 @@ class CustomUserAdmin(UserAdmin):
 admin.site.unregister(User)
 admin.site.register(User, CustomUserAdmin)
 
-@admin.register(Tag)
-class TagAdmin(admin.ModelAdmin):
-    list_display = ('name', 'created_at')
-    list_filter = ('created_at',)
-    search_fields = ('name',)
-    readonly_fields = ('created_at',)
+# @admin.register(Tag)
+# class TagAdmin(admin.ModelAdmin):
+#     list_display = ('name', 'created_at')
+#     list_filter = ('created_at',)
+#     search_fields = ('name',)
+#     readonly_fields = ('created_at',)
 
 @admin.register(Photo)
 class PhotoAdmin(admin.ModelAdmin):
-    list_display = ('title', 'uploaded_by', 'created_at', 'get_likes_count', 'get_dislikes_count')
-    list_filter = ('created_at', 'updated_at', 'uploaded_by')
-    search_fields = ('title', 'description', 'uploaded_by__username')
-    readonly_fields = ('created_at', 'updated_at', 'get_likes_count', 'get_dislikes_count')
-    filter_horizontal = ('tags',)
+    list_display = ('title', 'uploaded_at')  # Use the actual field name
+    list_filter = ('uploaded_at', 'tags')  # Use actual fields
+    search_fields = ('title', 'description')
+    readonly_fields = ('uploaded_at',)
+    filter_horizontal = ('tags',)  # This works since you have ManyToManyField
     
-    def get_likes_count(self, obj):
-        return obj.get_likes_count()
-    get_likes_count.short_description = 'Likes'
-    
-    def get_dislikes_count(self, obj):
-        return obj.get_dislikes_count()
-    get_dislikes_count.short_description = 'Dislikes'
+    # Remove these methods if your model doesn't have like/dislike functionality yet
+    # def get_likes_count(self, obj):
+    #     return obj.get_likes_count()
+    # get_likes_count.short_description = 'Likes'
+    # 
+    # def get_dislikes_count(self, obj):
+    #     return obj.get_dislikes_count()
+    # get_dislikes_count.short_description = 'Dislikes'
 
+# Only register these if the models exist and have the required fields
 @admin.register(PhotoLike)
 class PhotoLikeAdmin(admin.ModelAdmin):
-    list_display = ('user', 'photo', 'created_at')
-    list_filter = ('created_at',)
+    list_display = ('user', 'photo') 
     search_fields = ('user__username', 'photo__title')
-    readonly_fields = ('created_at',)
 
 @admin.register(PhotoDislike)
 class PhotoDislikeAdmin(admin.ModelAdmin):
-    list_display = ('user', 'photo', 'created_at')
-    list_filter = ('created_at',)
+    list_display = ('user', 'photo') 
     search_fields = ('user__username', 'photo__title')
-    readonly_fields = ('created_at',)

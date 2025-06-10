@@ -71,8 +71,8 @@
                     <form id="comment-form" class="mb-6">
                         {% csrf_token %}
                         <div class="flex space-x-4">
-                            <img src="{{ user.profile.avatar.url|default:'/static/img/default-avatar.png' }}" 
-                                 alt="{{ user.username }}" class="w-10 h-10 rounded-full">
+                            <img src="{{ photo.uploaded_by.profile.avatar.url|default:'/static/img/default-avatar.png' }}" 
+                                 alt="{{ photo.uploaded_by.username }}" class="w-10 h-10 rounded-full">
                             <div class="flex-1">
                                 <textarea name="content" 
                                           placeholder="Add a comment..." 
@@ -96,7 +96,7 @@
                             <div class="flex-1">
                                 <div class="flex items-center space-x-2 mb-2">
                                     <h4 class="font-semibold text-gray-900">{{ comment.user.username }}</h4>
-                                    <span class="text-sm text-gray-500">{{ comment.created_at|timesince }} ago</span>
+                                    <span class="text-sm text-gray-500">{{ comment.uploaded_at|timesince }} ago</span>
                                 </div>
                                 <p class="text-gray-700">{{ comment.content }}</p>
                             </div>
@@ -120,10 +120,10 @@
                 <!-- Photo Details -->
                 <div class="space-y-4">
                     <div class="flex items-center space-x-3">
-                        <img src="{{ photo.user.profile.avatar.url|default:'/static/img/default-avatar.png' }}" 
-                             alt="{{ photo.user.username }}" class="w-12 h-12 rounded-full">
+                        <img src="{{ photo.uploaded_by.profile.avatar.url|default:'/static/img/default-avatar.png' }}" 
+                             alt="{{ photo.uploaded_by.username }}" class="w-12 h-12 rounded-full">
                         <div>
-                            <p class="font-semibold text-gray-900">{{ photo.user.get_full_name|default:photo.user.username }}</p>
+                            <p class="font-semibold text-gray-900">{{ photo.uploaded_by.get_full_name|default:photo.uploaded_by.username }}</p>
                             <p class="text-sm text-gray-500">Photographer</p>
                         </div>
                     </div>
@@ -132,7 +132,7 @@
                         <dl class="space-y-2">
                             <div class="flex justify-between">
                                 <dt class="text-sm text-gray-500">Uploaded</dt>
-                                <dd class="text-sm text-gray-900">{{ photo.created_at|date:"M d, Y" }}</dd>
+                                <dd class="text-sm text-gray-900">{{ photo.uploaded_at|date:"M d, Y" }}</dd>
                             </div>
                             
                             {% if photo.camera %}
@@ -204,7 +204,7 @@
             <!-- Related Photos -->
             {% if related_photos %}
                 <div class="mt-8 bg-white rounded-lg shadow-lg p-6">
-                    <h3 class="text-lg font-semibold mb-4">More from {{ photo.user.username }}</h3>
+                    <h3 class="text-lg font-semibold mb-4">More from {{ photo.uploaded_by.username }}</h3>
                     <div class="grid grid-cols-2 gap-4">
                         {% for related in related_photos %}
                             <a href="{% url 'photo_detail' related.id %}" class="block">
